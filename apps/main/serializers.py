@@ -8,11 +8,11 @@ class CategorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Category
-        fields = ('id', 'name', 'slug', 'description''posts_count')
+        fields = ('id', 'name', 'slug', 'description','posts_count')
         read_only_fields = ('slug', 'created_at')
 
     def get_posts_count(self, obj):
-        return obj.posts.filtes(status='published').count()
+        return obj.posts.filter(status='published').count()
 
     def create(self, validated_data):
         validated_data['slug'] = slugify(validated_data['name'])
@@ -42,7 +42,7 @@ class PostDetailSerializer(serializers.ModelSerializer):
         model = Post
         fields = ['id', 'title', 'slug', 'content', 'image',
                   'category', 'author', 'status', 'created_at',
-                  'updated_at', 'views_count', 'comments_count']
+                  'updated_at', 'views_count', 'comments_count','author_info', 'category_info']
         read_only_fields = ('slug', 'author', 'views_count')
 
     def get_author_info(self, obj):
@@ -68,7 +68,7 @@ class PostCreateSerializer(serializers.ModelSerializer):
         fields = ['title', 'content', 'image', 'category', 'status']
 
     def create(self, validated_data):
-        validated_data['slug'] = self.context['request'].user
+        validated_data['slug'] = slugify(validated_data['title'])
         validated_data['author'] = self.context['request'].user
         return super().create(validated_data)
 

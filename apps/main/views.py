@@ -1,4 +1,4 @@
-from django.contrib.messages import api
+from rest_framework.decorators import api_view , permission_classes
 from django.shortcuts import render
 from rest_framework import generics, permissions, status, filters
 from rest_framework.response import Response
@@ -7,7 +7,7 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404
 
 from .models import Category, Post
-from .selializers import ( CategorySerializer, PostListSerializer, PostDetailSerializer, PostCreateUpdateSerializer)
+from .serializers import (CategorySerializer, PostListSerializer, PostDetailSerializer, PostCreateSerializer)
 from .permissions import IsAuthenticatedOrReadOnly
 
 class CategoryListCreateView(generics.ListCreateAPIView):
@@ -42,14 +42,14 @@ class PostListCreateView(generics.ListCreateAPIView):
             queryset = queryset.filter(Q(status= 'published') | Q(author=self.request.user))
         return queryset
     def get_serializer_class(self):
-        if self.request.user.method == 'POST':
-            return PostCreateUpdateSerializer
+        if self.request.method == 'POST':
+            return PostCreateSerializer
         return PostListSerializer
 
 class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Post.objects.select_related('author','category')
     serializer_class = PostDetailSerializer
-    permission_classes = [permissions.IsAuthorOrReadOnly]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     lookup_field = 'slug'
 
     def get_selializer_class(self):
@@ -61,7 +61,7 @@ class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
         instance = self.get_object()
 
         if request.method == 'GET':
-            instance.increments_views()
+            instance.increment_views()
 
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
@@ -78,16 +78,16 @@ class MyPostsView(generics.ListAPIView):
     def get_queryset(self):
         return Post.objects.filter(author=self.request.user).select_related('author','category')
 
-@api.view(['GET'])
-@permissions_classes([permissions.AllowAny])
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
 def post_by_category(request, category_slug):
     category = get_object_or_404(Category, slug=category_slug)
     posts = posts.objects.filter(category=category, status = 'published').select_related('author','category').order_by('-created_at')
     serializer = PostListSerializer(posts, many=True, context={'request': request})
-    return Response({'category' : Category.Serializer(category).data, 'posts' : serializer.data})
+    return Response({'category' : CategorySerializer(category).data, 'posts' : serializer.data})
 
-@api.view(['GET'])
-@permissions_classes([permissions.AllowAny])
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
 def popular_posts(request, category_slug):
     posts = posts.objects.filter(
         stasus = 'published'
@@ -95,8 +95,8 @@ def popular_posts(request, category_slug):
     serializer = PostListSerializer(posts, many=True, context={'request': request})
     return Response(selializer.data)
 
-@api.view(['GET'])
-@permissions_classes([permissions.AllowAny])
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
 def recent_posts(request, category_slug):
     posts = posts.objects.filter(
         stasus = 'published'
