@@ -50,7 +50,7 @@ class UserLoginSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('"Email" or "password" is required.')
 
 
-class ProfileSerializer(serializers.ModelSerializer):
+class UserProfileSerializer(serializers.ModelSerializer):
     full_name = serializers.ReadOnlyField()
     posts_count = serializers.SerializerMethodField()
     comments_count = serializers.SerializerMethodField()
