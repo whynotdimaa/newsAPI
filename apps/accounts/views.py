@@ -7,19 +7,17 @@ from django.contrib.auth import login
 
 from . models import User
 from .serializers import (
-    UserLoginSerializer, UserProfileSerializer, ChangePasswordSerializer
-
-'UserRegistrationSerializer',
-   'UserLoginSerializer',
-   'UserProfileSerializer',
-   'UserUpdateSerializer',
-   'ChangePasswordSerializer',
+    UserRegistrationSerializer,
+    UserLoginSerializer,
+    UserProfileSerializer,
+    UserUpdateSerializer,
+    ChangePasswordSerializer,
 )
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserRegistrationSerializer
-    permission_classes = (permissions.AllowAny)
+    permission_classes = [permissions.AllowAny]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
