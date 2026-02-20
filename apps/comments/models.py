@@ -5,7 +5,7 @@ from apps.main.models import Post
 
 
 class Comment(models.Model):
-    post = models.ForeignKey(main.Post, on_delete=models.CASCADE, related_name='comments')
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments')
     author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='comments')
     parent = models.ForeignKey('self', null=True, blank=True, related_name='replies', on_delete=models.CASCADE)
     content = models.TextField()
@@ -22,15 +22,15 @@ class Comment(models.Model):
             models.Index(fields=['author', '-created_at']),
             models.Index(fields=['parent', '-created_at']),
             ]
-        def __str__(self):
-            return f"Comment by {self.author.username} on {self.post.title}"
+    def __str__(self):
+        return f"Comment by {self.author.username} on {self.post.title}"
 
-        @property
-        def replies_count(self):
-            return self.replies_filter(is_active=True).count()
+    @property
+    def replies_count(self):
+        return self.replies.filter(is_active=True).count()
 
-        @property
-        def is_reply(self):
-            return self.parent is not None
+    @property
+    def is_reply(self):
+        return self.parent is not None
 
 

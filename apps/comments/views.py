@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404
 
 from .models import Comment
 from .serializers import (CommentSerializer, CommentCreateSerializer, CommentDetailSerializer, CommentUpdateSerializer)
-from .permissions import IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly
+from .permissions import IsAuthorOrReadOnly
 from apps.main.models import Post
 
 
