@@ -22,12 +22,20 @@ class PostListSerializer(serializers.ModelSerializer):
     author = serializers.StringRelatedField()
     category = serializers.StringRelatedField()
     comments_count = serializers.ReadOnlyField()
+    is_pinned = serializers.ReadOnlyField()
+    pinned_info = serializers.SerializerMethodField()
+
+
     class Meta:
         model = Post
         fields = ['id', 'title', 'slug', 'content', 'image' ,
                   'category' ,'author' , 'status', 'created_at',
-                  'updated_at', 'views_count','comments_count']
-        read_only_fields = ('slug', 'author', 'views_count')
+                  'updated_at', 'views_count','comments_count','is_pinned', 'pinned_info']
+        read_only_fields = ('slug', 'author', 'views_count', )
+
+    def get_pinned_info(self, obj):
+        return obj.get_pinned_info()
+
     def to_representation(self, instance):
         data = super().to_representation(instance)
         if len(data['content']) > 200:
@@ -38,11 +46,15 @@ class PostDetailSerializer(serializers.ModelSerializer):
     author_info = serializers.SerializerMethodField()
     category_info = serializers.SerializerMethodField()
     comments_count = serializers.ReadOnlyField()
+    is_pinned = serializers.ReadOnlyField()
+    pinned_info = serializers.SerializerMethodField()
+    can_pin = serializers.SerializerMethodField()
+
     class Meta:
         model = Post
         fields = ['id', 'title', 'slug', 'content', 'image',
                   'category', 'author', 'status', 'created_at',
-                  'updated_at', 'views_count', 'comments_count','author_info', 'category_info']
+                  'updated_at', 'views_count', 'comments_count','author_info', 'category_info', 'is_pinned', 'pinned_info', 'can_pin']
         read_only_fields = ('slug', 'author', 'views_count')
 
     def get_author_info(self, obj):
@@ -61,6 +73,15 @@ class PostDetailSerializer(serializers.ModelSerializer):
                 'slug': obj.category.slug,
             }
         return None
+
+    def get_pinned_info(self, obj):
+        return obj.get_pinned_info()
+
+    def get_can_pin(self,obj):
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return False
+        return obj.can_be_pinned_by(request.user)
 
 class PostCreateSerializer(serializers.ModelSerializer):
     class Meta:

@@ -179,3 +179,47 @@ SIMPLE_JWT = {
     'USER_ID_CLAIM': 'user_id',
 }
 AUTH_USER_MODEL = 'accounts.User'
+
+import os
+os.makedirs(BASE_DIR / 'logs' , exist_ok=True)
+
+# Email настройки
+EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = config('EMAIL_HOST', default='localhost')
+EMAIL_PORT = config('EMAIL_PORT', default=587, cast=int)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=True, cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='noreply@newssite.com')
+
+# Celery настройки
+CELERY_BROKER_URL = config('CELERY_BROKER_URL', default='redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = config('CELERY_RESULT_BACKEND', default='redis://localhost:6379/0')
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_ACCEPT_CONTENT = ['json']
+
+# Celery Beat
+CELERY_BEAT_SCHEDULE = {
+    'check-expired-subscriptions': {
+        'task': 'apps.subscribe.tasks.check_expired_subscriptions',
+        'schedule': 3600.0,  #hour
+    },
+    'send-subscription-expiry-reminders': {
+        'task': 'apps.subscribe.tasks.send_subscription_expiry_reminder',
+        'schedule': 86400.0,  # day
+    }
+#     'cleanup-old-payments': {
+#         'task': 'apps.payment.tasks.cleanup_old_payments',
+#         'schedule': 604800.0,  # week
+#     },
+#     'cleanup-old-webhook-events': {
+#         'task': 'apps.payment.tasks.cleanup_old_webhook_events',
+#         'schedule': 86400.0,  # day
+#     },
+#     'retry-failed-webhook-events': {
+#         'task': 'apps.payment.tasks.retry_failed_webhook_events',
+#         'schedule': 3600.0,  # hour
+#     },
+ }
