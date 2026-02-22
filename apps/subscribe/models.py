@@ -164,7 +164,7 @@ class SubscriptionHistory(models.Model):
         max_length=20,
         choices=ACTION_CHOICES,
     )
-    desciption = models.TextField(blank=True)
+    description = models.TextField(blank=True)
     metadata = models.JSONField(blank=True, default=dict)
     created_at = models.DateTimeField(auto_now_add=True)
 

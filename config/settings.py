@@ -179,7 +179,7 @@ SIMPLE_JWT = {
     'USER_ID_CLAIM': 'user_id',
 }
 AUTH_USER_MODEL = 'accounts.User'
-
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 import os
 os.makedirs(BASE_DIR / 'logs' , exist_ok=True)
 
