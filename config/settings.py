@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure--nc6^8%3@fpeblh)t@^o=7^a+vpmexo+y8ixap60cg&dg#!cup
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['newsapi.duckdns.org', 'localhost', '127.0.0.1', 'backend']
 
 
 # Application definition
@@ -46,6 +46,8 @@ THIRD_PARTY_APPS = [
     'django_filters',
     'rest_framework.authtoken',
     'rest_framework_simplejwt',
+    'drf_spectacular',
+    'corsheaders',
 ]
 LOCAL_APPS = [
     'apps.accounts',
@@ -154,6 +156,7 @@ REST_FRAMEWORK = {
         'rest_framework.filters.SearchFilter',
         'rest_framework.filters.OrderingFilter',
     ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
     ],
@@ -227,3 +230,16 @@ CELERY_BEAT_SCHEDULE = {
          'schedule': 3600.0,  # hour
      },
  }
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "http://newsapi.duckdns.org", # Твій реальний домен у хмарі
+    "http://34.116.238.13",      # Твій зовнішній IP
+]
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'News API Project',
+    'DESCRIPTION': 'Професійна документація API для новинного порталу',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}

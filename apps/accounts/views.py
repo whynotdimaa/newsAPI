@@ -13,7 +13,14 @@ from .serializers import (
     UserUpdateSerializer,
     ChangePasswordSerializer,
 )
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
 
+@extend_schema(
+    tags=['Користувачі'],
+    summary="Реєстрація нового користувача",
+    description="Створює новий обліковий запис. Після успішної реєстрації користувач може увійти через ендпоінт входу."
+)
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserRegistrationSerializer
@@ -33,6 +40,11 @@ class RegisterView(generics.CreateAPIView):
             'message' : 'User registered successfully!'
         }, status=status.HTTP_201_CREATED)
 
+@extend_schema(
+    tags=['Аутентифікація'],
+    summary="Вхід у систему",
+    description="Приймає email та пароль, повертає дані користувача та токени доступу."
+)
 class LoginView(generics.GenericAPIView):
     serializer_class = UserLoginSerializer
     permission_classes = [permissions.AllowAny]
@@ -52,6 +64,23 @@ class LoginView(generics.GenericAPIView):
             'message': 'User login successfully!'
         }, status=status.HTTP_200_OK)
 
+@extend_schema_view(
+    get=extend_schema(
+        summary="Отримання профілю користувача",
+        description="Повертає детальні дані поточного авторизованого користувача.",
+        tags=['Користувачі']
+    ),
+    put=extend_schema(
+        summary="Повне оновлення профілю",
+        description="Дозволяє змінити всі дані профілю (ім'я, біографія, аватар тощо).",
+        tags=['Користувачі']
+    ),
+    patch=extend_schema(
+        summary="Часткове оновлення профілю",
+        description="Дозволяє змінити окремі поля профілю користувача.",
+        tags=['Користувачі']
+    )
+)
 class ProfileView(generics.RetrieveAPIView):
     serializer_class = UserProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -64,6 +93,11 @@ class ProfileView(generics.RetrieveAPIView):
             return UserUpdateSerializer
         return UserProfileSerializer
 
+@extend_schema(
+    tags=['Користувач'],
+    summary="Зміна паролю",
+    description="Дозволяє авторизованому користувачу змінити свій пароль, підтвердивши старий."
+)
 class ChangePasswordView(generics.UpdateAPIView):
     serializer_class = ChangePasswordSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -80,6 +114,11 @@ class ChangePasswordView(generics.UpdateAPIView):
             'message': 'Password updated successfully!'
         }, status=status.HTTP_200_OK)
 
+@extend_schema(
+    tags=['Аутентифікація'],
+    summary="Вихід із системи",
+    description="Додає refresh токен у чорний список, роблячи його недійсним."
+)
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
 def logout(request):

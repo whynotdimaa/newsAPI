@@ -16,17 +16,43 @@ from .serializers import (SubscriptionPlanSerializer, SubscriptionSerializer,
                           SubscriptionHistorySerializer, UserSubscriptionStatusSerializer,
                           PinPostSerializer, UnpinPostSerializer)
 from apps.main.models import Post
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
+
+
+@extend_schema_view(
+    get=extend_schema(
+        summary="Список доступних планів підписки",
+        description="Повертає перелік усіх активних тарифних планів, які користувачі можуть придбати.",
+        tags=['Плани підписки']
+    )
+)
 
 class SubscriptionPlanListView(generics.ListAPIView):
     queryset = SubscriptionPlan.objects.filter(is_active=True)
     serializer_class = SubscriptionPlanSerializer
     permission_classes = [permissions.AllowAny]
 
+@extend_schema_view(
+    get=extend_schema(
+        summary="Деталі плану підписки",
+        description="Повертає детальну інформацію про конкретний тарифний план за його ID.",
+        tags=['Плани підписки']
+    )
+)
 class SubscriptionPlanDetailView(generics.RetrieveAPIView):
     queryset = SubscriptionPlan.objects.filter(is_active=True)
     serializer_class = SubscriptionPlanSerializer
     permission_classes = [permissions.AllowAny]
 
+
+@extend_schema_view(
+    get=extend_schema(
+        summary="Моя поточна підписка",
+        description="Повертає інформацію про активну підписку поточного користувача, включаючи дату закінчення та статус.",
+        tags=['Керування підпискою']
+    )
+)
 class UserSubscriptionView(generics.RetrieveAPIView):
     serializer_class = SubscriptionSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -49,6 +75,14 @@ class UserSubscriptionView(generics.RetrieveAPIView):
                 'detail' : 'No subscription found'
             }, status=status.HTTP_404_NOT_FOUND)
 
+
+@extend_schema_view(
+    get=extend_schema(
+        summary="Історія підписки",
+        description="Повертає повний список подій (оплата, активація, скасування) для поточного користувача.",
+        tags=['Керування підпискою']
+    )
+)
 class SubscriptionHistoryView(generics.ListAPIView):
     serializer_class = SubscriptionHistorySerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -57,10 +91,17 @@ class SubscriptionHistoryView(generics.ListAPIView):
         '''Вертає історію підписки юзера'''
         try:
             subscription = self.request.user.subscription
-            return subcription.history.all()
+            return subscription.history.all()
         except Subscription.DoesNotExist:
             return SubscriptionHistory.objects.none()
 
+
+@extend_schema_view(
+    get=extend_schema(summary="Мій закріплений пост", tags=['Закріплені пости']),
+    put=extend_schema(summary="Оновити закріплений пост", tags=['Закріплені пости']),
+    patch=extend_schema(summary="Частково оновити закріплений пост", tags=['Закріплені пости']),
+    delete=extend_schema(summary="Видалити закріплений пост", tags=['Закріплені пости'])
+)
 class PinnedPostView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = PinnedPostSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -99,6 +140,12 @@ class PinnedPostView(generics.RetrieveUpdateDestroyAPIView):
                 'detail' : 'No pinned post found'
             },status=status.HTTP_404_NOT_FOUND)
 
+
+@extend_schema(
+    tags=['Керування підпискою'],
+    summary="Статус підписки",
+    description="Повертає інформацію про те, чи активна підписка у користувача та чи може він закріплювати пости."
+)
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def subscription_status(request):
@@ -106,6 +153,14 @@ def subscription_status(request):
     serializer = UserSubscriptionStatusSerializer(request.user)
     return Response(serializer.data)
 
+
+@extend_schema(
+    tags=['Закріплені пости'],
+    summary="Закріпити пост",
+    description="Дозволяє автору з активною підпискою закріпити один свій пост у стрічці.",
+    request=PinPostSerializer,
+    responses={201: PinnedPostSerializer}
+)
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
 def pin_post(request):
@@ -145,6 +200,13 @@ def pin_post(request):
             },status=status.HTTP_400_BAD_REQUEST)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
+@extend_schema(
+    tags=['Закріплені пости'],
+    summary="Відкріпити пост",
+    description="Видаляє поточний закріплений пост користувача.",
+    request=UnpinPostSerializer
+)
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
 def unpin_post(request):
@@ -165,6 +227,13 @@ def unpin_post(request):
             },status=status.HTTP_404_NOT_FOUND)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
+@extend_schema(
+    tags=['Керування підпискою'],
+    summary="Скасувати підписку",
+    description="Відключає активну підписку користувача та автоматично видаляє його закріплений пост.",
+    responses={200: OpenApiTypes.OBJECT}
+)
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
 def cancel_subscription(request):
@@ -197,6 +266,12 @@ def cancel_subscription(request):
             'error' : 'No subscription found'
         },status=status.HTTP_404_NOT_FOUND)
 
+
+@extend_schema(
+    tags=['Закріплені пости'],
+    summary="Список усіх закріплених постів",
+    description="Публічний метод, що повертає всі закріплені пости на сайті з даними про авторів та категорії."
+)
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
 def pinned_post_list(request):
@@ -232,10 +307,17 @@ def pinned_post_list(request):
             'is_pinned' : True,
         })
     return Response({
-        'count' : int(posts_data),
+        'count' : len(posts_data),
         'results' : posts_data,
     })
 
+
+@extend_schema(
+    tags=['Закріплені пости'],
+    summary="Чи можна закріпити цей пост",
+    description="Перевіряє, чи має пост статус опублікованого, чи є користувач автором та чи є в нього активна підписка.",
+    parameters=[OpenApiParameter(name="post_id", type=int, location=OpenApiParameter.PATH)]
+)
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def can_pin_post(request, post_id):

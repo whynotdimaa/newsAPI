@@ -10,6 +10,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from django.db import transaction
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
 
 from .models import Payment, PaymentAttempt, Refund, Webhook
 from .serializer import (
@@ -26,7 +28,13 @@ from apps.subscribe.models import SubscriptionPlan
 
 
 # --- Перегляд платежів ---
-
+@extend_schema_view(
+    get=extend_schema(
+        summary="Список моїх платежів",
+        description="Повертає історію всіх платежів поточного користувача з деталями підписки.",
+        tags=['Платежі']
+    )
+)
 class PaymentListView(generics.ListAPIView):
     """Список платежів користувача"""
     serializer_class = PaymentSerializer
@@ -38,7 +46,13 @@ class PaymentListView(generics.ListAPIView):
             user=self.request.user
         ).select_related('subscription', 'subscription__plan').order_by('-created_at')
 
-
+@extend_schema_view(
+    get=extend_schema(
+        summary="Деталі конкретного платежу",
+        description="Повертає детальну інформацію про один платіж користувача за його ID.",
+        tags=['Платежі']
+    )
+)
 class PaymentDetailView(generics.RetrieveAPIView):
     """Детальна інформація про платіж"""
     serializer_class = PaymentSerializer
@@ -50,7 +64,13 @@ class PaymentDetailView(generics.RetrieveAPIView):
             user=self.request.user
         ).select_related('subscription', 'subscription__plan')
 
-
+@extend_schema(
+    tags=['Платежі'],
+    summary="Створити сесію оплати Stripe",
+    description="Створює платіж у системі та генерує URL для переходу на сторінку оплати Stripe Checkout.",
+    request=PaymentCreateSerializer,
+    responses={201: StripeCheckoutSessionSerializer}
+)
 # --- Операції з платежами ---
 
 @api_view(['POST'])
@@ -100,7 +120,12 @@ def create_checkout_session(request):
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
+@extend_schema(
+    tags=['Платежі'],
+    summary="Перевірити статус платежу",
+    description="Отримує актуальний статус платежу. Якщо платіж у стані очікування, виконується запит до Stripe для синхронізації.",
+    responses={200: PaymentStatusSerializer}
+)
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def payment_status(request, payment_id):
@@ -142,6 +167,12 @@ def payment_status(request, payment_id):
         }, status=status.HTTP_404_NOT_FOUND)
 
 
+@extend_schema(
+    tags=['Платежі'],
+    summary="Скасувати платіж",
+    description="Дозволяє користувачу скасувати платіж, який ще не був оброблений.",
+    responses={200: OpenApiTypes.OBJECT}
+)
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
 def cancel_payment(request, payment_id):
@@ -174,7 +205,12 @@ def cancel_payment(request, payment_id):
             'error': 'Платіж не знайдено'
         }, status=status.HTTP_404_NOT_FOUND)
 
-
+@extend_schema(
+    tags=['Платежі'],
+    summary="Повторна спроба оплати",
+    description="Створює нову сесію Stripe для платежу, який раніше завершився невдачею.",
+    responses={200: StripeCheckoutSessionSerializer}
+)
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
 def retry_payment(request, payment_id):
@@ -219,6 +255,13 @@ def retry_payment(request, payment_id):
         }, status=status.HTTP_404_NOT_FOUND)
 
 
+@extend_schema_view(
+    get=extend_schema(
+        summary="Список усіх повернень (Admin)",
+        description="Тільки для адміністраторів: перегляд усіх операцій із повернення коштів.",
+        tags=['Повернення коштів (Refunds)']
+    )
+)
 # --- Повернення коштів (Refunds) ---
 
 class RefundListView(generics.ListAPIView):
@@ -231,7 +274,12 @@ class RefundListView(generics.ListAPIView):
             'payment', 'payment__user', 'created_by'
         ).order_by('-created_at')
 
-
+@extend_schema_view(
+    get=extend_schema(
+        summary="Деталі повернення (Admin)",
+        tags=['Повернення коштів (Refunds)']
+    )
+)
 class RefundDetailView(generics.RetrieveAPIView):
     """Детальна інформація про повернення"""
     serializer_class = RefundSerializer
@@ -240,7 +288,13 @@ class RefundDetailView(generics.RetrieveAPIView):
         'payment', 'payment__user', 'created_by'
     )
 
-
+@extend_schema(
+    tags=['Повернення коштів (Refunds)'],
+    summary="Створити повернення коштів (Admin)",
+    description="Тільки для адміністраторів: ініціює повне або часткове повернення коштів через Stripe.",
+    request=RefundCreateSerializer,
+    responses={201: RefundSerializer}
+)
 @api_view(['POST'])
 @permission_classes([permissions.IsAdminUser])
 def create_refund(request, payment_id):
@@ -298,7 +352,7 @@ def create_refund(request, payment_id):
 
 
 # --- Вебхуки та Аналітика ---
-
+@extend_schema(exclude=True)
 @csrf_exempt
 @require_POST
 def stripe_webhook(request):
@@ -326,7 +380,12 @@ def stripe_webhook(request):
     else:
         return HttpResponse(status=400)
 
-
+@extend_schema(
+    tags=['Адміністрування та аналітика'],
+    summary="Загальна фінансова аналітика",
+    description="Тільки для адміністраторів: повертає статистику доходів, кількість активних підписок та середній чек.",
+    responses={200: OpenApiTypes.OBJECT}
+)
 @api_view(['GET'])
 @permission_classes([permissions.IsAdminUser])
 def payment_analytics(request):
@@ -379,7 +438,12 @@ def payment_analytics(request):
         }
     })
 
-
+@extend_schema(
+    tags=['Платежі'],
+    summary="Історія платежів",
+    description="Повертає повну історію транзакцій поточного користувача.",
+    responses={200: PaymentSerializer(many=True)}
+)
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def user_payment_history(request):

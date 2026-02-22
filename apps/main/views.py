@@ -5,13 +5,25 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-
+from drf_spectacular.utils import extend_schema, extend_schema_view, OpenApiParameter
+from drf_spectacular.types import OpenApiTypes
 from .models import Category, Post
 from .serializers import (CategorySerializer, PostListSerializer, PostDetailSerializer, PostCreateSerializer)
 from .permissions import IsAuthenticatedOrReadOnly
 from ..comments.permissions import IsAuthorOrReadOnly
 
-
+@extend_schema_view(
+    get=extend_schema(
+        summary="Список категорій",
+        description="Повертає перелік усіх категорій новин із кількістю опублікованих постів у кожній.",
+        tags=['Категорії']
+    ),
+    post=extend_schema(
+        summary="Створити категорію",
+        description="Адміністративний метод для створення нової категорії.",
+        tags=['Категорії']
+    )
+)
 class CategoryListCreateView(generics.ListCreateAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
@@ -21,12 +33,31 @@ class CategoryListCreateView(generics.ListCreateAPIView):
     ordering_fields = ['name','created_at']
     ordering = ['name']
 
+@extend_schema_view(
+    get=extend_schema(summary="Деталі категорії", tags=['Категорії']),
+    put=extend_schema(summary="Оновити категорію", tags=['Категорії']),
+    patch=extend_schema(summary="Частково оновити категорію", tags=['Категорії']),
+    delete=extend_schema(summary="Видалити категорію", tags=['Категорії'])
+)
 class CategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     lookup_field = 'slug'
 
+
+@extend_schema_view(
+    get=extend_schema(
+        summary="Стрічка постів",
+        description="Повертає список постів. Для анонімів — лише опубліковані. Для авторів — опубліковані + власні чернетки. Закріплені пости відображаються першими.",
+        tags=['Пости']
+    ),
+    post=extend_schema(
+        summary="Створити пост",
+        description="Створює новий пост. Авторство автоматично присвоюється поточному користувачу.",
+        tags=['Пости']
+    )
+)
 class PostListCreateView(generics.ListCreateAPIView):
     serializer_class = PostListSerializer
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
@@ -59,6 +90,17 @@ class PostListCreateView(generics.ListCreateAPIView):
 
         return response
 
+
+@extend_schema_view(
+    get=extend_schema(
+        summary="Деталі поста",
+        description="Повертає повний вміст поста та інкрементує лічильник переглядів.",
+        tags=['Пости']
+    ),
+    put=extend_schema(summary="Оновити пост", tags=['Пости']),
+    patch=extend_schema(summary="Частково оновити пост", tags=['Пости']),
+    delete=extend_schema(summary="Видалити пост", tags=['Пости'])
+)
 class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Post.objects.select_related('author','category')
     serializer_class = PostDetailSerializer
@@ -79,6 +121,12 @@ class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
+
+@extend_schema(
+    tags=['Пости'],
+    summary="Мої пости",
+    description="Список усіх постів (опублікованих та чернеток), які належать поточному користувачу."
+)
 class MyPostsView(generics.ListAPIView):
     serializer_class = PostListSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -91,6 +139,13 @@ class MyPostsView(generics.ListAPIView):
     def get_queryset(self):
         return Post.objects.filter(author=self.request.user).select_related('author','category')
 
+
+@extend_schema(
+    tags=['Пости'],
+    summary="Пости за категорією",
+    description="Повертає список опублікованих постів для конкретної категорії (за її слагом).",
+    parameters=[OpenApiParameter(name="category_slug", type=str, location=OpenApiParameter.PATH)]
+)
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
 def post_by_category(request, category_slug):
@@ -134,6 +189,12 @@ def post_by_category(request, category_slug):
         'pinned_posts_count' : sum(1 for post in selializer.data if post.get('is pinned', False)),
     })
 
+
+@extend_schema(
+    tags=['Пости'],
+    summary="Популярні пости",
+    description="Повертає топ-10 постів з найбільшою кількістю переглядів."
+)
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
 def popular_posts(request, category_slug):
@@ -145,6 +206,12 @@ def popular_posts(request, category_slug):
     serializer = PostListSerializer(posts, many=True, context={'request': request})
     return Response(serializer.data)
 
+
+@extend_schema(
+    tags=['Спеціальні вибірки'],
+    summary="Нещодавні пости",
+    description="Повертає 10 останніх опублікованих постів, відсортованих за датою створення (спочатку нові)."
+)
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
 def recent_posts(request, category_slug):
@@ -159,7 +226,11 @@ def recent_posts(request, category_slug):
     )
     return Response(serializer.data)
 
-
+@extend_schema(
+    tags=['Спеціальні вибірки'],
+    summary="Тільки закріплені пости",
+    description="Повертає список усіх постів, які були закріплені авторами з активною підпискою."
+)
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
 def pinned_posts_only(request):
@@ -170,7 +241,11 @@ def pinned_posts_only(request):
         'count': posts.count(),
         'results': serializer.data,
     })
-
+@extend_schema(
+    tags=['Спеціальні вибірки'],
+    summary="Рекомендовані пости (Featured)",
+    description="Комплексна вибірка: повертає до 3 закріплених постів та до 6 популярних постів за останній тиждень."
+)
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
 def featured_posts(request):
@@ -193,6 +268,12 @@ def featured_posts(request):
     })
 
 
+@extend_schema(
+    tags=['Дії з постами'],
+    summary="Переключити закріплення поста",
+    description="Дозволяє автору закріпити або відкріпити свій пост. Вимагає активної підписки.",
+    responses={200: OpenApiTypes.OBJECT}
+)
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
 def toogle_post_pin_status(request, slug):
