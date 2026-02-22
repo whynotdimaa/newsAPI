@@ -183,6 +183,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 import os
 os.makedirs(BASE_DIR / 'logs' , exist_ok=True)
 
+STRIPE_PUBLISHABLE_KEY = config('STRIPE_PUBLISHABLE_KEY',default='')
+STRIPE_SECRET_KEY = config('STRIPE_SECRET_KEY',default='')
+STRIPE_WEBHOOK_SECRET = config('STRIPE_WEBHOOK_SECRET',default='')
+
 # Email настройки
 EMAIL_BACKEND = config('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
 EMAIL_HOST = config('EMAIL_HOST', default='localhost')
@@ -209,17 +213,17 @@ CELERY_BEAT_SCHEDULE = {
     'send-subscription-expiry-reminders': {
         'task': 'apps.subscribe.tasks.send_subscription_expiry_reminder',
         'schedule': 86400.0,  # day
-    }
-#     'cleanup-old-payments': {
-#         'task': 'apps.payment.tasks.cleanup_old_payments',
-#         'schedule': 604800.0,  # week
-#     },
-#     'cleanup-old-webhook-events': {
-#         'task': 'apps.payment.tasks.cleanup_old_webhook_events',
-#         'schedule': 86400.0,  # day
-#     },
-#     'retry-failed-webhook-events': {
-#         'task': 'apps.payment.tasks.retry_failed_webhook_events',
-#         'schedule': 3600.0,  # hour
-#     },
+    },
+     'cleanup-old-payments': {
+         'task': 'apps.payment.tasks.cleanup_old_payments',
+         'schedule': 604800.0,  # week
+     },
+     'cleanup-old-webhook-events': {
+         'task': 'apps.payment.tasks.cleanup_old_webhook_events',
+         'schedule': 86400.0,  # day
+     },
+     'retry-failed-webhook-events': {
+        'task': 'apps.payment.tasks.retry_failed_webhook_events',
+         'schedule': 3600.0,  # hour
+     },
  }

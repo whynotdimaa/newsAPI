@@ -10,7 +10,7 @@ from apps.subscribe.models import Subscription, SubscriptionHistory, Subscriptio
 
 logger = logging.getLogger(__name__)
 
-stripe.api_key = settings.STRIPE_API_KEY
+stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
 class StripeService:
@@ -274,11 +274,11 @@ class WebhookService:
             event_type = event_data.get('type')
 
             # Перевіряємо, чи не обробляли ми вже цю подію раніше
-            if WebhookEvent.objects.filter(event_id=event_id).exists():
+            if Webhook.objects.filter(event_id=event_id).exists():
                 return True
 
             # Створюємо запис про подію в базі даних
-            webhook_event = WebhookEvent.objects.create(
+            webhook_event = Webhook.objects.create(
                 provider='stripe',
                 event_id=event_id,
                 event_type=event_type,

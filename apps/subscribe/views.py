@@ -15,10 +15,9 @@ from .serializers import (SubscriptionPlanSerializer, SubscriptionSerializer,
                           SubscriptionCreateSerializer, PinnedPostSerializer,
                           SubscriptionHistorySerializer, UserSubscriptionStatusSerializer,
                           PinPostSerializer, UnpinPostSerializer)
-from .permissions import IsAuthorOrReadOnly
 from apps.main.models import Post
 
-class SubcriptionPlanListView(generics.ListAPIView):
+class SubscriptionPlanListView(generics.ListAPIView):
     queryset = SubscriptionPlan.objects.filter(is_active=True)
     serializer_class = SubscriptionPlanSerializer
     permission_classes = [permissions.AllowAny]
@@ -263,7 +262,7 @@ def can_pin_post(request, post_id):
 
         return Response({
             'post_id' : post_id,
-            'can_pin' : checks['can_pin']
+            'can_pin' : checks['can_pin'],
             'checks' : checks,
             'message' : 'Can pin post' if checks['can_pin'] else 'Can not pin post'
         })

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.utils import timezone
-from .models import SubscriptionPlan, Subscription, PinnedPost, SubcribtionHistory
+from .models import SubscriptionPlan, Subscription, PinnedPost, SubscriptionHistory
 
 class SubscriptionPlanSerializer(serializers.ModelSerializer):
     class Meta:
@@ -118,7 +118,7 @@ class PinnedPostSerializer(serializers.ModelSerializer):
 
 class SubscriptionHistorySerializer(serializers.ModelSerializer):
     class Meta:
-        model = SubcribtionHistory
+        model = SubscriptionHistory
         fields = ['id', 'action', 'description', 'metadata', 'created_at']
         read_only_fields = ['id', 'created_at']
 
@@ -126,7 +126,7 @@ class SubscriptionHistorySerializer(serializers.ModelSerializer):
 class UserSubscriptionStatusSerializer(serializers.ModelSerializer):
     has_subscription = serializers.BooleanField()
     is_active = serializers.BooleanField()
-    subscription = SubcribtionSerializer(allow_null=True)
+    subscription = SubscriptionSerializer(allow_null=True)
     pinned_post = PinnedPostSerializer(allow_null=True)
     can_pin_posts = serializers.BooleanField()
 
