@@ -49,6 +49,7 @@ class CommentUpdateSerializer(serializers.ModelSerializer):
 
 class CommentDetailSerializer(serializers.ModelSerializer):
     replies = serializers.SerializerMethodField()
+    author_info = serializers.SerializerMethodField()
 
 
     class Meta(CommentSerializer.Meta):

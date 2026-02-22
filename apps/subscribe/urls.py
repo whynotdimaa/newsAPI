@@ -10,7 +10,7 @@ urlpatterns = [
     path('my-subscription/', views.UserSubscriptionView.as_view(), name = 'my-subscription'),
     path('status/', views.subscription_status, name = 'subscription-status'),
     path('history/', views.SubscriptionHistoryView.as_view(), name = 'subscription-history'),
-    path('cancel/', views.cancel_subcription, name = 'cancel-subscription'),
+    path('cancel/', views.cancel_subscription, name = 'cancel-subscription'),
 
     #Pinned posts
     path('pinned-post/', views.PinnedPostView.as_view(), name = 'pinned-post'),

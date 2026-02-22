@@ -9,6 +9,8 @@ from django.shortcuts import get_object_or_404
 from .models import Category, Post
 from .serializers import (CategorySerializer, PostListSerializer, PostDetailSerializer, PostCreateSerializer)
 from .permissions import IsAuthenticatedOrReadOnly
+from ..comments.permissions import IsAuthorOrReadOnly
+
 
 class CategoryListCreateView(generics.ListCreateAPIView):
     queryset = Category.objects.all()
@@ -41,14 +43,6 @@ class PostListCreateView(generics.ListCreateAPIView):
         else:
             queryset = queryset.filter(Q(status= 'published') | Q(author=self.request.user))
 
-        #Провіряєм чи потрібне сортування з урахуванням закріплених постів
-        ordering = self.request.query_params.get('ordering', '')
-        show_pinned_first = not ordering or ordering in ['-created_at','created_at']
-        if show_pinned_first:
-            return Post.get_posts_for_feed().filter(
-                Q(status='published') | Q(author=self.request.user) if self.request.user.is_authenticated else Q()
-            )
-
         return queryset
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -68,7 +62,7 @@ class PostListCreateView(generics.ListCreateAPIView):
 class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Post.objects.select_related('author','category')
     serializer_class = PostDetailSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthorOrReadOnly]
     lookup_field = 'slug'
 
     def get_serializer_class(self):
