@@ -52,7 +52,7 @@ def pinned_post_post_save(sender, instance, created, **kwargs):
             }
         )
 
-@receiver(post_save,sender=PinnedPost)
+@receiver(pre_delete,sender=PinnedPost)
 def pinned_post_pre_delete(sender, instance, **kwargs):
     '''Обробник видалення закріпленого поста'''
     if hasattr(instance.user, 'subscription'):

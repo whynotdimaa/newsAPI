@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-
+from datetime import timezone
 from .models import Subscription, SubscriptionPlan, SubscriptionHistory, PinnedPost
 from .serializers import (SubscriptionPlanSerializer, SubscriptionSerializer,
                           SubscriptionCreateSerializer, PinnedPostSerializer,
@@ -167,7 +167,7 @@ def unpin_post(request):
 
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
-def cancel_subcription(request):
+def cancel_subscription(request):
     '''Відміняєм підписку юзера'''
     try:
         subscription = request.user.subscription

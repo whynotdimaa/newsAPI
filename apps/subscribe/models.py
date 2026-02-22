@@ -136,7 +136,7 @@ class PinnedPost(models.Model):
         '''Переоприділяє збереження для перевірки підписки'''
 
         #перевірка на наявність
-        if not hasattr(self.user, 'subscription') or not self.user.subscription_plan.is_active:
+        if not hasattr(self.user, 'subscription') or not self.user.subscription.is_active:
             raise ValueError('User has no subscription plan')
 
         #перевірка принадлежності поста до юзера

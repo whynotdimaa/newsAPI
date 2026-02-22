@@ -70,7 +70,7 @@ class Payment(models.Model):
     def can_be_refunded(self):
         '''Провіряє чи можна вернути платіж'''
 
-    def mark_as_suceeded(self):
+    def mark_as_succeeded(self):
         '''Помічає платіж як успішний'''
         self.status = 'succeeded'
         self.processed_at = timezone.now()

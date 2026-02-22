@@ -59,7 +59,7 @@ class PostListCreateView(generics.ListCreateAPIView):
         response = super().list(request, *args, **kwargs)
 
         #Статистика закріплених постів
-        if hasattr(respone, 'data') and 'results' in response.data:
+        if hasattr(response, 'data') and 'results' in response.data:
             pinned_count = sum(1 for post in response.data['results'] if post.get('is_pinned', False))
             response.data['pinned_posts_count'] = pinned_count
 
@@ -149,7 +149,7 @@ def popular_posts(request, category_slug):
     ).order_by('-views_count')[:10]
 
     serializer = PostListSerializer(posts, many=True, context={'request': request})
-    return Response(selializer.data)
+    return Response(serializer.data)
 
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
