@@ -136,18 +136,21 @@ services:
 
   # Nginx — роздає статику Swagger та проксує запити на Django
   nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - static_volume:/staticfiles:ro
-      - media_volume:/app/media:ro
-    depends_on:
-      - backend
-    networks:
-      - app-network
-    restart: unless-stopped
+      image: nginx:alpine
+      ports:
+        - "80:80"
+        - "443:443"
+      volumes:
+        - ./nginx.conf:/etc/nginx/nginx.conf:ro
+        - static_volume:/staticfiles:ro
+        - media_volume:/app/media:ro
+        - /etc/letsencrypt:/etc/letsencrypt:ro
+        - /var/lib/letsencrypt:/var/lib/letsencrypt:ro
+      depends_on:
+        - backend
+      networks:
+        - app-network
+      restart: unless-stopped
 
 volumes:
   postgres_data:
